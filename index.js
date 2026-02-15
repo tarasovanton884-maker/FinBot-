@@ -1,3 +1,9 @@
+const OpenAI = require("openai");
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_KEY
+});
+
 const express = require("express");
 const cors = require("cors");
 const stripe = require("stripe")(process.env.STRIPE_KEY || "sk_test_fake");
