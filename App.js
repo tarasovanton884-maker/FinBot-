@@ -9,7 +9,7 @@ export default function App() {
   const [note, setNote] = useState("");
 
   const getAdvice = async () => {
-    if (!email) return Alert.alert("Введите email");
+    if (!email) return Alert.alert("Enter your email");
 
     try {
       const res = await fetch(`${API_URL}/advice`, {
@@ -21,12 +21,12 @@ export default function App() {
       setAdvice(data.advice);
       setNote(data.note || "");
     } catch (err) {
-      Alert.alert("Ошибка сервера");
+      Alert.alert("Server error");
     }
   };
 
   const subscribe = async () => {
-    if (!email) return Alert.alert("Введите email");
+    if (!email) return Alert.alert("Enter your email");
     try {
       const res = await fetch(`${API_URL}/subscribe`, {
         method: "POST",
@@ -34,10 +34,9 @@ export default function App() {
         body: JSON.stringify({ email })
       });
       const data = await res.json();
-      // Открываем Stripe checkout в браузере
-      Alert.alert("Подписка", `Перейди по ссылке для оплаты:\n${data.url}`);
+      Alert.alert("Subscription", `Follow this link to pay:\n${data.url}`);
     } catch (err) {
-      Alert.alert("Ошибка Stripe");
+      Alert.alert("Stripe error");
     }
   };
 
@@ -47,7 +46,7 @@ export default function App() {
 
       <TextInput
         style={styles.input}
-        placeholder="Введите email"
+        placeholder="Enter your email"
         value={email}
         onChangeText={setEmail}
         keyboardType="email-address"
@@ -55,7 +54,7 @@ export default function App() {
       />
 
       <TouchableOpacity style={styles.button} onPress={getAdvice}>
-        <Text style={styles.buttonText}>Получить совет</Text>
+        <Text style={styles.buttonText}>Get Advice</Text>
       </TouchableOpacity>
 
       {advice ? (
@@ -66,7 +65,7 @@ export default function App() {
       ) : null}
 
       <TouchableOpacity style={[styles.button, styles.subscribe]} onPress={subscribe}>
-        <Text style={styles.buttonText}>Подписаться</Text>
+        <Text style={styles.buttonText}>Subscribe</Text>
       </TouchableOpacity>
     </ScrollView>
   );
