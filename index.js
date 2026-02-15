@@ -10,16 +10,37 @@ app.use(cors());
 let users = {}; // { email: { paid: true/false } }
 
 // Советы
-const adviceFree = [
-  "Бесплатный совет: следите за расходами каждый день",
-  "Бесплатный совет: делайте ежемесячный бюджет",
-  "Бесплатный совет: откладывайте хотя бы 10% дохода"
-];
+app.post("/advice", async (req, res) => {
+  const { email } = req.body;
+  const user = users[email] || { paid: false };
 
-const advicePremium = [
-  "Премиум: рассмотрите инвестиции в ETF на американском рынке",
-  "Премиум: диверсифицируйте портфель, включая криптовалюту",
-  "Премиум: используйте стратегию DCA для долгосрочных инвестиций"
+  try {
+    // Формируем подсказку для AI
+    const prompt = user.paid
+      ? `Ты финансовый эксперт. Дай продвинутый финансовый совет пользователю с email ${email}.`
+      : `Ты финансовый эксперт. Дай простой бесплатный финансовый совет пользователю с email ${email}.`;
+
+    // Запрос к OpenAI
+    const response = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [{ role: "user", content: prompt }],
+    });
+
+    const aiAdvice = response.choices[0].message.content;
+
+    // Отправляем ответ
+    const result = user.paid
+      ? { advice: aiAdvice }
+      : { advice: aiAdvice, note: "Подпишись, чтобы получать премиум советы" };
+
+    res.json(result);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ advice: "Ошибка AI. Попробуйте позже." });
+  }
+});
+
 ];
 
 // Главная
