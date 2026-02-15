@@ -1,32 +1,38 @@
+// index.js - FinBot backend
+
+const express = require("express");
+const cors = require("cors");
+const stripe = require("stripe")(process.env.STRIPE_KEY || "sk_test_fake");
 const OpenAI = require("openai");
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_KEY
 });
 
-const express = require("express");
-const cors = require("cors");
-const stripe = require("stripe")(process.env.STRIPE_KEY || "sk_test_fake");
 const app = express();
-
 app.use(express.json());
 app.use(cors());
 
-// Мок база пользователей
+// Simple in-memory user database
 let users = {}; // { email: { paid: true/false } }
 
-// Советы
+// Home route
+app.get("/", (req, res) => {
+  res.send("FinBot server is running!");
+});
+
+// AI advice route
 app.post("/advice", async (req, res) => {
   const { email } = req.body;
   const user = users[email] || { paid: false };
 
   try {
-    // Формируем подсказку для AI
+    // Prompt in English
     const prompt = user.paid
-      ? `Ты финансовый эксперт. Дай продвинутый финансовый совет пользователю с email ${email}.`
-      : `Ты финансовый эксперт. Дай простой бесплатный финансовый совет пользователю с email ${email}.`;
+      ? `You are a financial expert. Give an advanced financial advice to the user with email ${email}. Keep it in English.`
+      : `You are a financial expert. Give a simple financial advice to the user with email ${email}. Keep it in English.`;
 
-    // Запрос к OpenAI
+    // Request OpenAI
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [{ role: "user", content: prompt }],
@@ -34,46 +40,22 @@ app.post("/advice", async (req, res) => {
 
     const aiAdvice = response.choices[0].message.content;
 
-    // Отправляем ответ
     const result = user.paid
       ? { advice: aiAdvice }
-      : { advice: aiAdvice, note: "Подпишись, чтобы получать премиум советы" };
+      : { advice: aiAdvice, note: "Subscribe to get premium advice" };
 
     res.json(result);
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ advice: "Ошибка AI. Попробуйте позже." });
+    res.status(500).json({ advice: "AI error. Please try again later." });
   }
 });
 
-];
-
-// Главная
-app.get("/", (req, res) => {
-  res.send("FinBot сервер работает!");
-});
-
-// AI advice
-app.post("/advice", (req, res) => {
-  const { email } = req.body;
-  const user = users[email] || { paid: false };
-
-  // Бесплатный совет всегда
-  const freeTip = adviceFree[Math.floor(Math.random() * adviceFree.length)];
-
-  if (!user.paid) {
-    return res.json({ advice: freeTip, note: "Подпишись, чтобы получать премиум советы" });
-  }
-
-  // Премиум совет для платных пользователей
-  const premiumTip = advicePremium[Math.floor(Math.random() * advicePremium.length)];
-  res.json({ advice: premiumTip });
-});
-
-// Создать Stripe checkout session
+// Stripe subscription
 app.post("/subscribe", async (req, res) => {
   const { email } = req.body;
+
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ["card"],
     line_items: [{
@@ -85,24 +67,20 @@ app.post("/subscribe", async (req, res) => {
     cancel_url: `${process.env.FRONTEND_URL || "http://localhost:19006"}?cancel=true`
   });
 
+  // Mark user as unpaid until confirmed
   if (!users[email]) users[email] = { paid: false };
+
   res.json({ url: session.url });
 });
 
-// Тестовое подтверждение оплаты (для проверки)
+// Test confirm payment route
 app.post("/confirm", (req, res) => {
   const { email } = req.body;
   if (users[email]) users[email].paid = true;
   res.json({ success: true });
 });
 
+// Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-
-const OpenAI = require("openai");
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_KEY
-});
-
 
