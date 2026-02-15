@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { View, Text, TextInput, Button, Linking, ScrollView, StyleSheet } from "react-native";
 
 // Вставь сюда свой URL backend с Railway
-const API_URL = "ТВОЙ_BACKEND_URL";
+const API_URL = "https://finbot-yf24.onrender.com";
 
 export default function App() {
   const [email, setEmail] = useState("");
