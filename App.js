@@ -1,74 +1,85 @@
-import React, { useState } from "react";
-import { View, Text, TextInput, Button, Linking, ScrollView, StyleSheet } from "react-native";
+import React, { useState } from 'react';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, Alert, ScrollView } from 'react-native';
 
-// Вставь сюда свой URL backend с Railway
-const API_URL = "https://finbot-yf24.onrender.com";
+const API_URL = "https://finbot-yf24.onrender.com"; 
 
 export default function App() {
   const [email, setEmail] = useState("");
-  const [adviceList, setAdviceList] = useState([]);
-  const [status, setStatus] = useState("free"); // free / paid
+  const [advice, setAdvice] = useState("");
+  const [note, setNote] = useState("");
 
   const getAdvice = async () => {
-    if (!email) return alert("Введите Email");
+    if (!email) return Alert.alert("Введите email");
 
     try {
       const res = await fetch(`${API_URL}/advice`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email })
       });
       const data = await res.json();
-      setAdviceList(prev => [...prev, data.advice]);
-      setStatus(data.advice.includes("подпишись") ? "free" : "paid");
+      setAdvice(data.advice);
+      setNote(data.note || "");
     } catch (err) {
-      alert("Ошибка: не удалось получить совет");
+      Alert.alert("Ошибка сервера");
     }
   };
 
   const subscribe = async () => {
-    if (!email) return alert("Введите Email");
-
+    if (!email) return Alert.alert("Введите email");
     try {
       const res = await fetch(`${API_URL}/subscribe`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email })
       });
       const data = await res.json();
-      if (data.url) Linking.openURL(data.url); // Открываем Stripe checkout
+      // Открываем Stripe checkout в браузере
+      Alert.alert("Подписка", `Перейди по ссылке для оплаты:\n${data.url}`);
     } catch (err) {
-      alert("Ошибка: не удалось открыть подписку");
+      Alert.alert("Ошибка Stripe");
     }
   };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>FinBot AI советы</Text>
+      <Text style={styles.title}>FinBot 💰</Text>
+
       <TextInput
         style={styles.input}
-        placeholder="Ваш Email"
+        placeholder="Введите email"
         value={email}
         onChangeText={setEmail}
+        keyboardType="email-address"
+        autoCapitalize="none"
       />
-      <Button title="Получить совет" onPress={getAdvice} />
-      <Button title="Подписаться" onPress={subscribe} color="#f39c12" style={{ marginTop: 10 }} />
-      <Text style={styles.status}>Статус: {status.toUpperCase()}</Text>
 
-      <View style={styles.adviceContainer}>
-        {adviceList.map((a, i) => (
-          <Text key={i} style={styles.advice}>• {a}</Text>
-        ))}
-      </View>
+      <TouchableOpacity style={styles.button} onPress={getAdvice}>
+        <Text style={styles.buttonText}>Получить совет</Text>
+      </TouchableOpacity>
+
+      {advice ? (
+        <View style={styles.adviceBox}>
+          <Text style={styles.adviceText}>{advice}</Text>
+          {note ? <Text style={styles.note}>{note}</Text> : null}
+        </View>
+      ) : null}
+
+      <TouchableOpacity style={[styles.button, styles.subscribe]} onPress={subscribe}>
+        <Text style={styles.buttonText}>Подписаться</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 20, alignItems: "stretch" },
-  title: { fontSize: 24, fontWeight: "bold", marginBottom: 20 },
-  input: { borderWidth: 1, padding: 10, marginBottom: 10, borderRadius: 5 },
-  status: { marginTop: 10, marginBottom: 10, fontWeight: "bold" },
-  adviceContainer: { marginTop: 20 },
-  advice: { marginBottom: 10, fontSize: 16 },
+  container: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
+  title: { fontSize: 32, fontWeight: 'bold', marginBottom: 20 },
+  input: { width: '100%', padding: 10, borderWidth: 1, borderColor: '#555', borderRadius: 8, marginBottom: 20 },
+  button: { backgroundColor: '#1e90ff', padding: 15, borderRadius: 8, width: '100%', alignItems: 'center', marginBottom: 10 },
+  subscribe: { backgroundColor: '#32cd32' },
+  buttonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  adviceBox: { marginTop: 20, padding: 15, borderWidth: 1, borderColor: '#aaa', borderRadius: 8, backgroundColor: '#f0f8ff' },
+  adviceText: { fontSize: 16, marginBottom: 10 },
+  note: { fontSize: 14, color: '#ff4500', fontWeight: 'bold' }
 });
